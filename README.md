@@ -60,7 +60,7 @@ A simple Telegram bot built with **Go** to track personal expenses and store the
 1. Send an expense in chat:
 
    ```
-   Buy coffee 15000
+   Beli kopi 15000
    ```
 2. Choose a category from inline buttons.
 3. Bot confirms and saves it to Google Sheets.
