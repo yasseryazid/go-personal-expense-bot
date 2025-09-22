@@ -9,6 +9,8 @@ import (
 
 	"go-telegram-expense-bot/service"
 
+	"github.com/dustin/go-humanize"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -58,13 +60,20 @@ func (h *TelegramHandler) handleCallback(cb *tgbotapi.CallbackQuery) {
 
 	_ = h.gs.Save(category, amount, desc, userID)
 
+	monthlyTotal, _ := h.gs.GetMonthlyTotalByUser(userID)
+
 	reply := fmt.Sprintf(
 		"Pengeluaran dicatat:\n"+
 			"- Deskripsi: %s\n"+
-			"- Jumlah: Rp%d\n"+
+			"- Jumlah: Rp%s\n"+
 			"- Kategori: %s\n"+
-			"- Tanggal: %s",
-		desc, amount, category, time.Now().Format("2006-01-02"),
+			"- Tanggal: %s\n"+
+			"- Total bulan ini: Rp%s",
+		desc,
+		humanize.Comma(int64(amount)),
+		category,
+		time.Now().Format("2006-01-02"),
+		humanize.Comma(int64(monthlyTotal)),
 	)
 
 	h.tg.Bot.Send(tgbotapi.NewMessage(cb.Message.Chat.ID, reply))

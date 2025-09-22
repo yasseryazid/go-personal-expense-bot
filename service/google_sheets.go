@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/oauth2/google"
@@ -38,10 +40,60 @@ func NewGoogleSheets(credFile, sheetID string) (*GoogleSheets, error) {
 
 func (g *GoogleSheets) Save(category string, amount int, desc string, userID int64) error {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
-	values := []interface{}{timestamp, userID, desc, amount, category}
+
+	readRange := "A:A"
+	resp, err := g.srv.Spreadsheets.Values.Get(g.sheetID, readRange).Do()
+	if err != nil {
+		return err
+	}
+	nextRow := len(resp.Values) + 1
+
+	formula := fmt.Sprintf("=SUM($D$2:D%d)", nextRow)
+
+	values := []interface{}{timestamp, userID, desc, amount, category, formula}
 	rb := &sheets.ValueRange{Values: [][]interface{}{values}}
 
-	_, err := g.srv.Spreadsheets.Values.Append(g.sheetID, "A:E", rb).
-		ValueInputOption("RAW").Do()
+	_, err = g.srv.Spreadsheets.Values.Append(g.sheetID, "A:F", rb).
+		ValueInputOption("USER_ENTERED").Do()
 	return err
+}
+
+func (g *GoogleSheets) GetMonthlyTotalByUser(userID int64) (int, error) {
+	readRange := "A:D"
+	resp, err := g.srv.Spreadsheets.Values.Get(g.sheetID, readRange).Do()
+	if err != nil {
+		return 0, err
+	}
+
+	currentYear, currentMonth, _ := time.Now().Date()
+	total := 0
+
+	for i, row := range resp.Values {
+		if i == 0 { // skip header
+			continue
+		}
+		if len(row) < 4 {
+			continue
+		}
+
+		timestamp := fmt.Sprintf("%v", row[0])
+		userStr := fmt.Sprintf("%v", row[1])
+		amountStr := fmt.Sprintf("%v", row[3])
+
+		// parse timestamp format "2006-01-02 15:04:05"
+		t, err := time.Parse("2006-01-02 15:04:05", timestamp)
+		if err != nil {
+			continue
+		}
+
+		if t.Year() == currentYear && t.Month() == currentMonth {
+			if fmt.Sprintf("%d", userID) == userStr {
+				if num, convErr := strconv.Atoi(amountStr); convErr == nil {
+					total += num
+				}
+			}
+		}
+	}
+
+	return total, nil
 }
