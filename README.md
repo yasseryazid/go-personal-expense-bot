@@ -44,7 +44,7 @@ A simple Telegram bot built with **Go** to track personal expenses and store the
 4. **Google Sheets**
 
    * Create a new Sheet and copy its ID.
-   * Add headers: `Timestamp | UserID | Description | Amount | Category`.
+   * Add headers: `Timestamp | UserID | Description | Amount | Category | Total Expense`.
    * Create a Service Account, download `credentials.json`, and share the Sheet with it (Editor access).
 
 5. **Run the bot**
