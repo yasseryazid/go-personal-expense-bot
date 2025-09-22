@@ -132,10 +132,19 @@ func (h *TelegramHandler) handleCallback(cb *tgbotapi.CallbackQuery) {
 
 	_ = h.gs.Save(category, amount, desc, userID)
 
+	edit := tgbotapi.NewEditMessageReplyMarkup(
+		cb.Message.Chat.ID,
+		cb.Message.MessageID,
+		tgbotapi.InlineKeyboardMarkup{InlineKeyboard: [][]tgbotapi.InlineKeyboardButton{}},
+	)
+	h.tg.Bot.Send(edit)
+
+	h.tg.Bot.Request(tgbotapi.NewCallback(cb.ID, ""))
+
 	monthlyTotal, _ := h.gs.GetMonthlyTotalByUser(userID)
 
 	reply := fmt.Sprintf(
-		"Pengeluaran dicatat:\n"+
+		"✅ Pengeluaran dicatat:\n"+
 			"- Deskripsi: %s\n"+
 			"- Jumlah: Rp%s\n"+
 			"- Kategori: %s\n"+
