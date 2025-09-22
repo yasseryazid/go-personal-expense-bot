@@ -37,11 +37,35 @@ func (h *TelegramHandler) Start() {
 }
 
 func (h *TelegramHandler) handleMessage(msg *tgbotapi.Message) {
+	if msg.Chat.Type != "private" {
+		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID,
+			"⚠️ Expenzo hanya bisa digunakan di *private chat*. Silakan chat langsung dengan Expenzo.",
+		))
+		return
+	}
+
+	if msg.Text == "/start" {
+		greeting := "Selamat datang di *Expenzo*!\n\n" +
+			"Dengan Expenzo kamu bisa:\n" +
+			"- Catat pengeluaran harian\n" +
+			"- Pilih kategori\n" +
+			"- Lihat total bulanan (/total)\n\n" +
+			"Ketik pengeluaran langsung (contoh: `Beli kopi 15000`)."
+
+		menu := tgbotapi.NewMessage(msg.Chat.ID, greeting)
+		menu.ParseMode = "Markdown"
+		h.tg.Bot.Send(menu)
+		return
+	}
+
 	if msg.Text == "/total" {
 		monthlyTotal, _ := h.gs.GetMonthlyTotalByUser(msg.From.ID)
-		reply := fmt.Sprintf("💰 Total pengeluaran kamu bulan ini: Rp%s",
+
+		reply := fmt.Sprintf(
+			"💰 Total pengeluaran kamu bulan ini: Rp%s",
 			humanize.Comma(int64(monthlyTotal)),
 		)
+
 		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, reply))
 		return
 	}
@@ -52,7 +76,8 @@ func (h *TelegramHandler) handleMessage(msg *tgbotapi.Message) {
 		reply.ReplyMarkup = buildCategoryKeyboard(amount, desc, msg.From.ID)
 		h.tg.Bot.Send(reply)
 	} else {
-		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "Ketik pengeluaran, contoh: Beli kopi 10000"))
+		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID,
+			"Ketik pengeluaran, contoh: Beli kopi 10000\nAtau ketik /total untuk cek total bulan ini."))
 	}
 }
 
