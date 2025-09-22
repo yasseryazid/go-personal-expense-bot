@@ -95,3 +95,46 @@ func (g *GoogleSheets) GetMonthlyTotalByUser(userID int64) (int, error) {
 	}
 	return total, nil
 }
+
+func (g *GoogleSheets) GetMonthlyDataByUser(userID int64) ([][]string, error) {
+	readRange := "A:E"
+	resp, err := g.srv.Spreadsheets.Values.Get(g.sheetID, readRange).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	currentYear, currentMonth, _ := time.Now().Date()
+	var records [][]string
+
+	for i, row := range resp.Values {
+		if i == 0 {
+			continue
+		}
+		if len(row) < 5 {
+			continue
+		}
+
+		timestamp := fmt.Sprintf("%v", row[0])
+		userStr := fmt.Sprintf("%v", row[1])
+
+		// parse tanggal
+		t, err := time.Parse("2006-01-02 15:04:05", timestamp)
+		if err != nil {
+			continue
+		}
+
+		if t.Year() == currentYear && t.Month() == currentMonth {
+			if userStr == fmt.Sprintf("%d", userID) {
+				record := []string{
+					timestamp,
+					userStr,
+					fmt.Sprintf("%v", row[2]),
+					fmt.Sprintf("%v", row[3]),
+					fmt.Sprintf("%v", row[4]),
+				}
+				records = append(records, record)
+			}
+		}
+	}
+	return records, nil
+}

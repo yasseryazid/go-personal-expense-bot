@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,16 +46,25 @@ func (h *TelegramHandler) handleMessage(msg *tgbotapi.Message) {
 	}
 
 	if msg.Text == "/start" {
-		greeting := "Selamat datang di *Expenzo*!\n\n" +
-			"Dengan Expenzo kamu bisa:\n" +
-			"- Catat pengeluaran harian\n" +
-			"- Pilih kategori\n" +
-			"- Lihat total bulanan (/total)\n\n" +
-			"Ketik pengeluaran langsung (contoh: `Beli kopi 15000`)."
+		name := msg.From.FirstName
+		if msg.From.LastName != "" {
+			name += " " + msg.From.LastName
+		}
 
-		menu := tgbotapi.NewMessage(msg.Chat.ID, greeting)
-		menu.ParseMode = "Markdown"
-		h.tg.Bot.Send(menu)
+		greeting := fmt.Sprintf(
+			"Halo %s, selamat datang di *Expenzo*!\n\n"+
+				"Dengan Expenzo kamu bisa:\n"+
+				"• Catat pengeluaran harian\n"+
+				"• Pilih kategori\n"+
+				"• Lihat total bulanan dengan /total\n"+
+				"• Export pengeluaran bulan ini ke CSV dengan /export\n\n"+
+				"Langsung coba ketik pengeluaran (contoh: `Beli kopi 15000`).",
+			name,
+		)
+
+		msgReply := tgbotapi.NewMessage(msg.Chat.ID, greeting)
+		msgReply.ParseMode = "Markdown"
+		h.tg.Bot.Send(msgReply)
 		return
 	}
 
@@ -67,6 +77,34 @@ func (h *TelegramHandler) handleMessage(msg *tgbotapi.Message) {
 		)
 
 		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, reply))
+		return
+	}
+
+	if msg.Text == "/export" {
+		records, err := h.gs.GetMonthlyDataByUser(msg.From.ID)
+		if err != nil {
+			h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Gagal ambil data dari Google Sheets"))
+			return
+		}
+
+		exporter := service.NewExporter()
+
+		username := msg.From.UserName
+		if username == "" {
+			username = msg.From.FirstName
+		}
+
+		filePath, err := exporter.ExportToCSV(username, records)
+		if err != nil {
+			h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, "❌ Gagal export ke CSV"))
+			return
+		}
+
+		doc := tgbotapi.NewDocument(msg.Chat.ID, tgbotapi.FilePath(filePath))
+		doc.Caption = fmt.Sprintf("📊 Export data bulan ini untuk %s", username)
+		h.tg.Bot.Send(doc)
+
+		os.Remove(filePath)
 		return
 	}
 
