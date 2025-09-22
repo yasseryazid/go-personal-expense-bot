@@ -69,7 +69,7 @@ func (g *GoogleSheets) GetMonthlyTotalByUser(userID int64) (int, error) {
 	total := 0
 
 	for i, row := range resp.Values {
-		if i == 0 { // skip header
+		if i == 0 {
 			continue
 		}
 		if len(row) < 4 {
@@ -80,7 +80,6 @@ func (g *GoogleSheets) GetMonthlyTotalByUser(userID int64) (int, error) {
 		userStr := fmt.Sprintf("%v", row[1])
 		amountStr := fmt.Sprintf("%v", row[3])
 
-		// parse timestamp format "2006-01-02 15:04:05"
 		t, err := time.Parse("2006-01-02 15:04:05", timestamp)
 		if err != nil {
 			continue
@@ -94,6 +93,5 @@ func (g *GoogleSheets) GetMonthlyTotalByUser(userID int64) (int, error) {
 			}
 		}
 	}
-
 	return total, nil
 }

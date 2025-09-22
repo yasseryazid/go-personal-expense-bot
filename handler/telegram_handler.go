@@ -37,6 +37,15 @@ func (h *TelegramHandler) Start() {
 }
 
 func (h *TelegramHandler) handleMessage(msg *tgbotapi.Message) {
+	if msg.Text == "/total" {
+		monthlyTotal, _ := h.gs.GetMonthlyTotalByUser(msg.From.ID)
+		reply := fmt.Sprintf("💰 Total pengeluaran kamu bulan ini: Rp%s",
+			humanize.Comma(int64(monthlyTotal)),
+		)
+		h.tg.Bot.Send(tgbotapi.NewMessage(msg.Chat.ID, reply))
+		return
+	}
+
 	amount, desc := parseExpense(msg.Text)
 	if amount > 0 {
 		reply := tgbotapi.NewMessage(msg.Chat.ID, "Pilih kategori:")
