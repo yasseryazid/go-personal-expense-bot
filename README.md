@@ -3,7 +3,7 @@
 ```markdown
 # Go Personal Expense Bot 💰🤖
 
-A simple Telegram bot built with **Go** to track personal expenses and store them in **Google Sheets**.
+A simple Telegram bot built with **Go** to track personal expenses.
 
 ---
 
